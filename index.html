@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decimal Squares</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f3f4f6;
+    color: #222;
+    text-align: center;
+}
+
+header {
+    background: #2563eb;
+    color: white;
+    padding: 20px;
+}
+
+header h1 {
+    margin: 0;
+}
+
+header p {
+    margin: 6px 0 0;
+}
+
+.controls {
+    background: white;
+    width: min(900px, 94%);
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0,0,0,.1);
+}
+
+button {
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 4px;
+}
+
+.operation {
+    background: #e5e7eb;
+}
+
+.operation.selected {
+    background: #2563eb;
+    color: white;
+}
+
+.place {
+    background: #e5e7eb;
+}
+
+.place.selected {
+    background: #16a34a;
+    color: white;
+}
+
+.clear {
+    background: #dc2626;
+    color: white;
+    margin-top: 12px;
+}
+
+.workspace {
+    width: min(1100px, 96%);
+    margin: auto;
+    background: white;
+    padding: 25px;
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0,0,0,.1);
+}
+
+.squares {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.square-area {
+    min-width: 280px;
+}
+
+.square-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.value-display {
+    font-size: 25px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.operator {
+    font-size: 45px;
+    font-weight: bold;
+}
+
+.grid {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: stretch;
+    margin: auto;
+    border: 3px solid #222;
+    background: white;
+    width: 300px;
+    height: 300px;
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.cell {
+    flex: 1;
+    border: 1px solid #bbb;
+    background: white;
+    cursor: pointer;
+}
+
+.cell:hover {
+    background: #dbeafe;
+}
+
+.cell.filled-a {
+    background: #60a5fa;
+}
+
+.cell.filled-b {
+    background: #f59e0b;
+}
+
+.cell.result {
+    background: #22c55e;
+    cursor: default;
+}
+
+.cell.top-cell {
+    border-top: 3px solid #222;
+}
+
+.result-area {
+    margin-top: 35px;
+}
+
+.instructions {
+    margin-top: 25px;
+    color: #555;
+    font-size: 15px;
+}
+
+@media (max-width: 650px) {
+
+    .grid {
+        width: 260px;
+        height: 260px;
+    }
+
+    .operator {
+        width: 100%;
+    }
+}
+</style>
+
+</head>
+
+<body>
+
+<header>
+    <h1>Decimal Squares</h1>
+    <p>Build decimals using vertical columns</p>
+</header>
+
+<div class="controls">
+
+```
+<h2>Operation</h2>
+
+<button id="addBtn" class="operation selected">
+    Add +
+</button>
+
+<button id="subtractBtn" class="operation">
+    Subtract −
+</button>
+
+<h2>Decimal Place</h2>
+
+<button id="tenthsBtn" class="place selected">
+    Tenths
+</button>
+
+<button id="hundredthsBtn" class="place">
+    Hundredths
+</button>
+
+<button id="thousandthsBtn" class="place">
+    Thousandths
+</button>
+
+<br>
+
+<button id="clearBtn" class="clear">
+    Clear Squares
+</button>
+```
+
+</div>
+
+<div class="workspace">
+
+```
+<div class="squares">
+
+    <div class="square-area">
+
+        <div class="square-title">
+            First Number
+        </div>
+
+        <div id="valueA" class="value-display">
+            0.0
+        </div>
+
+        <div id="gridA" class="grid"></div>
+
+    </div>
+
+    <div id="operator" class="operator">
+        +
+    </div>
+
+    <div class="square-area">
+
+        <div class="square-title">
+            Second Number
+        </div>
+
+        <div id="valueB" class="value-display">
+            0.0
+        </div>
+
+        <div id="gridB" class="grid"></div>
+
+    </div>
+
+</div>
+
+<div class="result-area">
+
+    <div class="operator">=</div>
+
+    <div class="square-title">
+        Result
+    </div>
+
+    <div id="resultNumber" class="value-display">
+        0.0
+    </div>
+
+    <div id="resultGrid" class="grid"></div>
+
+</div>
+
+<div class="instructions">
+    Click the top square of a column to fill or remove the entire vertical column.
+</div>
+```
+
+</div>
+
+<script>
+
+let operation = "add";
+let decimalPlace = "tenths";
+
+let values = {
+    a: 0,
+    b: 0
+};
+
+const placeInfo = {
+
+    tenths: {
+        columns: 10,
+        rows: 10,
+        columnValue: 0.1,
+        digits: 1
+    },
+
+    hundredths: {
+        columns: 10,
+        rows: 10,
+        columnValue: 0.01,
+        digits: 2
+    },
+
+    thousandths: {
+        columns: 20,
+        rows: 20,
+        columnValue: 0.001,
+        digits: 3
+    }
+
+};
+
+
+function setOperation(newOperation) {
+
+    operation = newOperation;
+
+    document.getElementById("addBtn")
+        .classList.toggle("selected", operation === "add");
+
+    document.getElementById("subtractBtn")
+        .classList.toggle("selected", operation === "subtract");
+
+    document.getElementById("operator").textContent =
+        operation === "add" ? "+" : "−";
+
+    updateResult();
+}
+
+
+function setDecimalPlace(place) {
+
+    decimalPlace = place;
+
+    document.querySelectorAll(".place").forEach(button => {
+        button.classList.remove("selected");
+    });
+
+    if (place === "tenths") {
+        document.getElementById("tenthsBtn")
+            .classList.add("selected");
+    }
+
+    if (place === "hundredths") {
+        document.getElementById("hundredthsBtn")
+            .classList.add("selected");
+    }
+
+    if (place === "thousandths") {
+        document.getElementById("thousandthsBtn")
+            .classList.add("selected");
+    }
+
+    values.a = 0;
+    values.b = 0;
+
+    buildGrid("gridA", "a");
+    buildGrid("gridB", "b");
+
+    updateDisplay();
+    updateResult();
+}
+
+
+function buildGrid(id, number) {
+
+    const grid = document.getElementById(id);
+    const info = placeInfo[decimalPlace];
+
+    grid.innerHTML = "";
+
+    const filledColumns = Math.round(
+        values[number] / info.columnValue
+    );
+
+    for (let columnIndex = 0;
+         columnIndex < info.columns;
+         columnIndex++) {
+
+        const column = document.createElement("div");
+
+        column.className = "column";
+
+        const isFilled =
+            columnIndex < filledColumns;
+
+        for (let rowIndex = 0;
+             rowIndex < info.rows;
+             rowIndex++) {
+
+            const cell = document.createElement("div");
+
+            cell.className = "cell";
+
+            if (isFilled) {
+
+                cell.classList.add(
+                    number === "a"
+                        ? "filled-a"
+                        : "filled-b"
+                );
+
+            }
+
+            /*
+             * Clicking ANY part of a column changes
+             * the whole vertical column.
+             */
+            cell.addEventListener("click", () => {
+
+                const currentColumns = Math.round(
+                    values[number] / info.columnValue
+                );
+
+                if (columnIndex < currentColumns) {
+
+                    values[number] -= info.columnValue;
+
+                } else {
+
+                    values[number] += info.columnValue;
+
+                }
+
+                values[number] =
+                    Math.round(values[number] * 1000) / 1000;
+
+                values[number] =
+                    Math.max(0, Math.min(1, values[number]));
+
+                buildGrid("gridA", "a");
+                buildGrid("gridB", "b");
+
+                updateDisplay();
+                updateResult();
+            });
+
+            column.appendChild(cell);
+        }
+
+        grid.appendChild(column);
+    }
+}
+
+
+function updateDisplay() {
+
+    const digits =
+        placeInfo[decimalPlace].digits;
+
+    document.getElementById("valueA").textContent =
+        values.a.toFixed(digits);
+
+    document.getElementById("valueB").textContent =
+        values.b.toFixed(digits);
+}
+
+
+function updateResult() {
+
+    let result;
+
+    if (operation === "add") {
+        result = values.a + values.b;
+    } else {
+        result = values.a - values.b;
+    }
+
+    result =
+        Math.round(result * 1000) / 1000;
+
+    const digits =
+        placeInfo[decimalPlace].digits;
+
+    document.getElementById("resultNumber").textContent =
+        result.toFixed(digits);
+
+    buildResultGrid(result);
+}
+
+
+function buildResultGrid(result) {
+
+    const grid =
+        document.getElementById("resultGrid");
+
+    const info =
+        placeInfo[decimalPlace];
+
+    grid.innerHTML = "";
+
+    const positiveResult =
+        Math.max(0, result);
+
+    const filledColumns =
+        Math.min(
+            info.columns,
+            Math.round(
+                positiveResult / info.columnValue
+            )
+        );
+
+    for (
+        let columnIndex = 0;
+        columnIndex < info.columns;
+        columnIndex++
+    ) {
+
+        const column =
+            document.createElement("div");
+
+        column.className = "column";
+
+        const isFilled =
+            columnIndex < filledColumns;
+
+        for (
+            let rowIndex = 0;
+            rowIndex < info.rows;
+            rowIndex++
+        ) {
+
+            const cell =
+                document.createElement("div");
+
+            cell.className = "cell";
+
+            if (isFilled) {
+                cell.classList.add("result");
+            }
+
+            column.appendChild(cell);
+        }
+
+        grid.appendChild(column);
+    }
+}
+
+
+document.getElementById("addBtn")
+    .addEventListener(
+        "click",
+        () => setOperation("add")
+    );
+
+document.getElementById("subtractBtn")
+    .addEventListener(
+        "click",
+        () => setOperation("subtract")
+    );
+
+document.getElementById("tenthsBtn")
+    .addEventListener(
+        "click",
+        () => setDecimalPlace("tenths")
+    );
+
+document.getElementById("hundredthsBtn")
+    .addEventListener(
+        "click",
+        () => setDecimalPlace("hundredths")
+    );
+
+document.getElementById("thousandthsBtn")
+    .addEventListener(
+        "click",
+        () => setDecimalPlace("thousandths")
+    );
+
+document.getElementById("clearBtn")
+    .addEventListener("click", () => {
+
+        values.a = 0;
+        values.b = 0;
+
+        buildGrid("gridA", "a");
+        buildGrid("gridB", "b");
+
+        updateDisplay();
+        updateResult();
+    });
+
+
+buildGrid("gridA", "a");
+buildGrid("gridB", "b");
+updateDisplay();
+updateResult();
+
+</script>
+
+</body>
+</html>
