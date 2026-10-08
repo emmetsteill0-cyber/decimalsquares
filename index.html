@@ -87,32 +87,20 @@
         margin-top: 150px;
     }
 
-    /* TENTHS */
-    .grid.tenths {
+    /*
+       ORIGINAL VERTICAL DESIGN
+    */
+
+    .grid {
         display: grid;
         grid-template-columns: repeat(10, 34px);
-        grid-template-rows: 34px;
+        grid-template-rows: repeat(10, 34px);
         gap: 2px;
-    }
-
-    /* HUNDREDTHS */
-    .grid.hundredths {
-        display: grid;
-        grid-template-columns: repeat(10, 28px);
-        grid-template-rows: repeat(10, 28px);
-        gap: 2px;
-    }
-
-    /* THOUSANDTHS */
-    .grid.thousandths {
-        display: grid;
-        grid-template-columns: repeat(20, 18px);
-        grid-template-rows: repeat(50, 18px);
-        gap: 1px;
-        max-height: 600px;
     }
 
     .cell {
+        width: 34px;
+        height: 34px;
         border: 1px solid #777;
         background: white;
         cursor: pointer;
@@ -149,8 +137,12 @@
     }
 
     #resultGrid {
-        display: inline-grid;
-        margin-top: 10px;
+        display: grid;
+        grid-template-columns: repeat(10, 34px);
+        grid-template-rows: repeat(10, 34px);
+        gap: 2px;
+        margin: 10px auto 0;
+        width: max-content;
     }
 
     .hint {
@@ -160,19 +152,15 @@
     }
 
     @media (max-width: 700px) {
-        .grid.tenths {
+        .grid,
+        #resultGrid {
             grid-template-columns: repeat(10, 25px);
-            grid-template-rows: 25px;
+            grid-template-rows: repeat(10, 25px);
         }
 
-        .grid.hundredths {
-            grid-template-columns: repeat(10, 22px);
-            grid-template-rows: repeat(10, 22px);
-        }
-
-        .grid.thousandths {
-            grid-template-columns: repeat(20, 12px);
-            grid-template-rows: repeat(50, 12px);
+        .cell {
+            width: 25px;
+            height: 25px;
         }
     }
 </style>
@@ -213,7 +201,7 @@
 </div>
 
 <div class="hint">
-    Click the squares to build each decimal.
+    Click anywhere in a vertical column to fill that column up to where you clicked.
 </div>
 
 <div id="squares"></div>
@@ -236,117 +224,143 @@ let values = [0, 0];
 const MIN_SQUARES = 2;
 const MAX_SQUARES = 10;
 
-const placeSelect = document.getElementById("placeSelect");
-const operationSelect = document.getElementById("operationSelect");
-const squaresContainer = document.getElementById("squares");
-const resultGrid = document.getElementById("resultGrid");
-const resultValue = document.getElementById("resultValue");
+const placeSelect =
+    document.getElementById("placeSelect");
 
-const addButton = document.getElementById("addButton");
-const removeButton = document.getElementById("removeButton");
-const clearButton = document.getElementById("clearButton");
+const operationSelect =
+    document.getElementById("operationSelect");
+
+const squaresContainer =
+    document.getElementById("squares");
+
+const resultGrid =
+    document.getElementById("resultGrid");
+
+const resultValue =
+    document.getElementById("resultValue");
+
+const addButton =
+    document.getElementById("addButton");
+
+const removeButton =
+    document.getElementById("removeButton");
+
+const clearButton =
+    document.getElementById("clearButton");
 
 
-/* -------------------------------------------------
-   PLACE SETTINGS
-------------------------------------------------- */
+/* -----------------------------------------
+   PLACE VALUE
+----------------------------------------- */
 
 function getPlaceInfo() {
 
     const place = placeSelect.value;
 
     if (place === "tenths") {
+
         return {
-            className: "tenths",
-            cellValue: 0.1,
-            columns: 10,
-            rows: 1,
+            value: 0.1,
             decimals: 1
         };
+
     }
 
     if (place === "hundredths") {
+
         return {
-            className: "hundredths",
-            cellValue: 0.01,
-            columns: 10,
-            rows: 10,
+            value: 0.01,
             decimals: 2
         };
+
     }
 
     return {
-        className: "thousandths",
-        cellValue: 0.001,
-        columns: 20,
-        rows: 50,
+        value: 0.001,
         decimals: 3
     };
 }
 
 
-/* -------------------------------------------------
-   CREATE ONE DECIMAL SQUARE
-------------------------------------------------- */
+/* -----------------------------------------
+   CREATE NUMBER SQUARE
+----------------------------------------- */
 
 function createSquare(index) {
 
-    const info = getPlaceInfo();
+    const box =
+        document.createElement("div");
 
-    const box = document.createElement("div");
     box.className = "number-box";
 
-    const label = document.createElement("div");
-    label.className = "number-label";
-    label.textContent = "Number " + (index + 1);
+    const label =
+        document.createElement("div");
 
-    const grid = document.createElement("div");
-    grid.className = "grid " + info.className;
+    label.className = "number-label";
+
+    label.textContent =
+        "Number " + (index + 1);
+
+    const grid =
+        document.createElement("div");
+
+    grid.className = "grid";
 
     /*
-       Total number of cells:
-       Tenths       = 10
-       Hundredths   = 100
-       Thousandths  = 1000
+       ALWAYS keep the original 10 × 10
+       visual design.
+
+       The selected place changes what
+       each cell means.
     */
 
-    const totalCells = info.columns * info.rows;
+    for (let row = 0; row < 10; row++) {
 
-    for (let i = 0; i < totalCells; i++) {
+        for (let column = 0; column < 10; column++) {
 
-        const cell = document.createElement("div");
-        cell.className = "cell";
+            const cell =
+                document.createElement("div");
 
-        /*
-           Store the value represented by this cell.
-        */
-        const cellIndex = i;
-
-        cell.addEventListener("click", function() {
+            cell.className = "cell";
 
             /*
-               Clicking a cell fills from the beginning
-               of the grid through the clicked cell.
-            */
-            values[index] = (cellIndex + 1) * info.cellValue;
+               IMPORTANT:
 
-            /*
-               Prevent tiny floating point errors.
+               CSS grid is created row-by-row.
+
+               We want clicking a vertical
+               column to fill upward from
+               the bottom.
             */
-            values[index] = Number(
-                values[index].toFixed(info.decimals)
+
+            cell.dataset.row = row;
+            cell.dataset.column = column;
+
+            cell.addEventListener(
+                "click",
+                function() {
+
+                    setColumnValue(
+                        index,
+                        column,
+                        row
+                    );
+
+                }
             );
 
-            updateAllSquares();
-
-        });
-
-        grid.appendChild(cell);
+            grid.appendChild(cell);
+        }
     }
 
-    const valueDisplay = document.createElement("div");
-    valueDisplay.className = "number-value";
-    valueDisplay.id = "value-" + index;
+    const valueDisplay =
+        document.createElement("div");
+
+    valueDisplay.className =
+        "number-value";
+
+    valueDisplay.id =
+        "value-" + index;
 
     box.appendChild(label);
     box.appendChild(grid);
@@ -356,15 +370,80 @@ function createSquare(index) {
 }
 
 
-/* -------------------------------------------------
-   BUILD ALL NUMBER SQUARES
-------------------------------------------------- */
+/* -----------------------------------------
+   CLICK A VERTICAL COLUMN
+----------------------------------------- */
+
+function setColumnValue(
+    numberIndex,
+    clickedColumn,
+    clickedRow
+) {
+
+    const info =
+        getPlaceInfo();
+
+    /*
+       In the original design:
+
+       Bottom row = lowest amount
+       Top row = full column.
+
+       A column represents:
+
+       Tenths      = 0.1
+       Hundredths  = 0.01
+       Thousandths = 0.001
+    */
+
+    let completedColumns =
+        clickedColumn;
+
+    /*
+       A click inside a column fills
+       that column from the bottom
+       through the clicked cell.
+
+       Each column is worth one
+       selected decimal place.
+    */
+
+    let partialAmount =
+        (10 - clickedRow) / 10;
+
+    /*
+       Completed columns plus the
+       partial clicked column.
+    */
+
+    let amount =
+        completedColumns * info.value;
+
+    amount +=
+        partialAmount * info.value;
+
+    values[numberIndex] =
+        Number(
+            amount.toFixed(info.decimals)
+        );
+
+    updateAllSquares();
+}
+
+
+/* -----------------------------------------
+   BUILD ALL SQUARES
+----------------------------------------- */
 
 function buildAllSquares() {
 
     squaresContainer.innerHTML = "";
 
-    for (let i = 0; i < values.length; i++) {
+    for (
+        let i = 0;
+        i < values.length;
+        i++
+    ) {
 
         squaresContainer.appendChild(
             createSquare(i)
@@ -372,13 +451,18 @@ function buildAllSquares() {
 
         if (i < values.length - 1) {
 
-            const operator = document.createElement("div");
-            operator.className = "operator";
+            const operator =
+                document.createElement("div");
+
+            operator.className =
+                "operator";
 
             operator.textContent =
                 getOperatorSymbol();
 
-            squaresContainer.appendChild(operator);
+            squaresContainer.appendChild(
+                operator
+            );
         }
     }
 
@@ -386,13 +470,14 @@ function buildAllSquares() {
 }
 
 
-/* -------------------------------------------------
-   OPERATOR SYMBOL
-------------------------------------------------- */
+/* -----------------------------------------
+   OPERATOR
+----------------------------------------- */
 
 function getOperatorSymbol() {
 
-    const operation = operationSelect.value;
+    const operation =
+        operationSelect.value;
 
     if (operation === "add") {
         return "+";
@@ -410,55 +495,148 @@ function getOperatorSymbol() {
 }
 
 
-/* -------------------------------------------------
-   UPDATE SQUARES
-------------------------------------------------- */
+/* -----------------------------------------
+   UPDATE NUMBER GRIDS
+----------------------------------------- */
 
 function updateAllSquares() {
 
-    const info = getPlaceInfo();
+    const info =
+        getPlaceInfo();
 
     const boxes =
-        document.querySelectorAll(".number-box");
+        document.querySelectorAll(
+            ".number-box"
+        );
 
-    boxes.forEach((box, index) => {
+    boxes.forEach(
+        (box, index) => {
 
-        const cells =
-            box.querySelectorAll(".cell");
+            const cells =
+                box.querySelectorAll(
+                    ".cell"
+                );
 
-        const amount =
-            Math.round(values[index] / info.cellValue);
+            /*
+               Convert the decimal into
+               tenths of the selected
+               place.
 
-        cells.forEach((cell, cellIndex) => {
+               Example:
 
-            if (cellIndex < amount) {
-                cell.classList.add("filled");
-            } else {
-                cell.classList.remove("filled");
-            }
+               Tenths:
+               0.5 → 5 filled columns
 
-        });
+               Hundredths:
+               0.50 → 5 filled columns
 
-        const display =
-            document.getElementById("value-" + index);
+               Thousandths:
+               0.500 → 5 filled columns
+            */
 
-        if (display) {
+            const columnAmount =
+                values[index] / info.value;
+
+            const fullColumns =
+                Math.floor(columnAmount);
+
+            const partial =
+                columnAmount -
+                fullColumns;
+
+            cells.forEach(
+                (cell) => {
+
+                    const row =
+                        Number(cell.dataset.row);
+
+                    const column =
+                        Number(cell.dataset.column);
+
+                    /*
+                       Columns before the
+                       current amount are full.
+                    */
+
+                    if (
+                        column < fullColumns
+                    ) {
+
+                        cell.classList.add(
+                            "filled"
+                        );
+
+                        return;
+                    }
+
+                    /*
+                       The next column is
+                       partially filled from
+                       the bottom.
+                    */
+
+                    if (
+                        column === fullColumns
+                        &&
+                        partial > 0
+                    ) {
+
+                        const cellsToFill =
+                            Math.round(
+                                partial * 10
+                            );
+
+                        const bottomRow =
+                            9 - row;
+
+                        if (
+                            bottomRow <
+                            cellsToFill
+                        ) {
+
+                            cell.classList.add(
+                                "filled"
+                            );
+
+                        } else {
+
+                            cell.classList.remove(
+                                "filled"
+                            );
+
+                        }
+
+                        return;
+                    }
+
+                    cell.classList.remove(
+                        "filled"
+                    );
+
+                }
+            );
+
+            const display =
+                document.getElementById(
+                    "value-" + index
+                );
 
             display.textContent =
-                values[index].toFixed(info.decimals);
+                values[index].toFixed(
+                    info.decimals
+                );
 
         }
-
-    });
+    );
 
     calculateResult();
     updateButtons();
 }
 
 
-/* -------------------------------------------------
-   CALCULATE RESULT
-------------------------------------------------- */
+/* -----------------------------------------
+   CALCULATE
+----------------------------------------- */
 
 function calculateResult() {
 
@@ -469,125 +647,223 @@ function calculateResult() {
 
     if (operation === "add") {
 
-        result = values.reduce(
-            (total, value) => total + value,
-            0
-        );
+        result =
+            values.reduce(
+                (total, value) =>
+                    total + value,
+                0
+            );
 
     }
 
-    else if (operation === "subtract") {
+    else if (
+        operation === "subtract"
+    ) {
 
         result = values[0];
 
-        for (let i = 1; i < values.length; i++) {
+        for (
+            let i = 1;
+            i < values.length;
+            i++
+        ) {
+
             result -= values[i];
+
         }
 
     }
 
-    else if (operation === "multiply") {
+    else if (
+        operation === "multiply"
+    ) {
 
-        result = values.reduce(
-            (total, value) => total * value,
-            1
-        );
+        result =
+            values.reduce(
+                (total, value) =>
+                    total * value,
+                1
+            );
 
     }
 
-    else if (operation === "divide") {
+    else if (
+        operation === "divide"
+    ) {
 
         result = values[0];
 
-        for (let i = 1; i < values.length; i++) {
+        for (
+            let i = 1;
+            i < values.length;
+            i++
+        ) {
 
             if (values[i] === 0) {
+
                 result = NaN;
                 break;
+
             }
 
             result /= values[i];
-        }
 
+        }
     }
 
-    if (!Number.isNaN(result)) {
+    if (Number.isNaN(result)) {
 
-        /*
-           Remove floating point errors.
-        */
+        resultValue.textContent =
+            "Cannot divide by 0";
+
+    } else {
+
         result =
-            Number(result.toFixed(6));
+            Number(
+                result.toFixed(6)
+            );
 
         resultValue.textContent =
             result.toString();
 
-    } else {
-
-        resultValue.textContent =
-            "Cannot divide by 0";
     }
 
     buildResultGrid(result);
 }
 
 
-/* -------------------------------------------------
+/* -----------------------------------------
    RESULT GRID
-------------------------------------------------- */
+----------------------------------------- */
 
 function buildResultGrid(result) {
 
     resultGrid.innerHTML = "";
 
-    if (!Number.isFinite(result) || result <= 0) {
+    if (
+        !Number.isFinite(result) ||
+        result <= 0
+    ) {
         return;
     }
 
-    const info = getPlaceInfo();
-
     /*
-       The visual result grid represents 0–1.
-       Values greater than 1 are shown numerically.
+       The result grid keeps the
+       original design.
+
+       It visually represents
+       values from 0 to 1.
     */
+
+    const info =
+        getPlaceInfo();
 
     const visualResult =
         Math.min(result, 1);
 
-    const amount =
+    const cellsToFill =
         Math.round(
-            visualResult / info.cellValue
+            visualResult / 0.01
         );
 
-    resultGrid.className =
-        "grid " + info.className;
+    for (
+        let row = 0;
+        row < 10;
+        row++
+    ) {
 
-    const totalCells =
-        info.columns * info.rows;
+        for (
+            let column = 0;
+            column < 10;
+            column++
+        ) {
 
-    for (let i = 0; i < totalCells; i++) {
+            const cell =
+                document.createElement(
+                    "div"
+                );
 
-        const cell =
-            document.createElement("div");
+            cell.className =
+                "cell";
 
-        cell.className = "cell";
+            /*
+               Convert row/column into
+               bottom-to-top cell number.
+            */
 
-        if (i < amount) {
-            cell.classList.add("filled");
+            const cellNumber =
+                column * 10 +
+                (9 - row);
+
+            /*
+               The visual result is
+               scaled according to the
+               selected decimal place.
+            */
+
+            let filled;
+
+            if (
+                placeSelect.value ===
+                "tenths"
+            ) {
+
+                filled =
+                    cellNumber <
+                    Math.round(
+                        visualResult * 10
+                    ) * 10;
+
+            }
+
+            else if (
+                placeSelect.value ===
+                "hundredths"
+            ) {
+
+                filled =
+                    cellNumber <
+                    Math.round(
+                        visualResult * 100
+                    );
+
+            }
+
+            else {
+
+                filled =
+                    cellNumber <
+                    Math.round(
+                        visualResult * 100
+                    );
+
+            }
+
+            if (filled) {
+
+                cell.classList.add(
+                    "filled"
+                );
+
+            }
+
+            resultGrid.appendChild(
+                cell
+            );
         }
-
-        resultGrid.appendChild(cell);
     }
 }
 
 
-/* -------------------------------------------------
-   ADD SQUARE
-------------------------------------------------- */
+/* -----------------------------------------
+   ADD NUMBER SQUARE
+----------------------------------------- */
 
 function addSquare() {
 
-    if (values.length >= MAX_SQUARES) {
+    if (
+        values.length >= MAX_SQUARES
+    ) {
         return;
     }
 
@@ -597,13 +873,15 @@ function addSquare() {
 }
 
 
-/* -------------------------------------------------
-   REMOVE SQUARE
-------------------------------------------------- */
+/* -----------------------------------------
+   REMOVE NUMBER SQUARE
+----------------------------------------- */
 
 function removeSquare() {
 
-    if (values.length <= MIN_SQUARES) {
+    if (
+        values.length <= MIN_SQUARES
+    ) {
         return;
     }
 
@@ -613,9 +891,9 @@ function removeSquare() {
 }
 
 
-/* -------------------------------------------------
+/* -----------------------------------------
    CLEAR
-------------------------------------------------- */
+----------------------------------------- */
 
 function clearAll() {
 
@@ -626,23 +904,25 @@ function clearAll() {
 }
 
 
-/* -------------------------------------------------
-   BUTTON STATE
-------------------------------------------------- */
+/* -----------------------------------------
+   BUTTON STATES
+----------------------------------------- */
 
 function updateButtons() {
 
     removeButton.disabled =
-        values.length <= MIN_SQUARES;
+        values.length <=
+        MIN_SQUARES;
 
     addButton.disabled =
-        values.length >= MAX_SQUARES;
+        values.length >=
+        MAX_SQUARES;
 }
 
 
-/* -------------------------------------------------
+/* -----------------------------------------
    CONTROLS
-------------------------------------------------- */
+----------------------------------------- */
 
 addButton.addEventListener(
     "click",
@@ -664,12 +944,14 @@ placeSelect.addEventListener(
     function() {
 
         /*
-           Keep the existing decimal amount
-           when changing place values, but
-           rebuild the correct grid.
+           DO NOT change the design.
+
+           Only change what each
+           cell represents.
         */
 
         buildAllSquares();
+
     }
 );
 
@@ -678,13 +960,14 @@ operationSelect.addEventListener(
     function() {
 
         buildAllSquares();
+
     }
 );
 
 
-/* -------------------------------------------------
+/* -----------------------------------------
    START
-------------------------------------------------- */
+----------------------------------------- */
 
 buildAllSquares();
 
