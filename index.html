@@ -37,7 +37,7 @@ header p {
 
 .controls {
     background: white;
-    width: min(950px, 94%);
+    width: min(1000px, 94%);
     margin: 20px auto;
     padding: 20px;
     border-radius: 14px;
@@ -76,14 +76,30 @@ button {
     color: white;
 }
 
+.square-control {
+    background: #7c3aed;
+    color: white;
+}
+
+.square-control:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
 .clear {
     background: #dc2626;
     color: white;
     margin-top: 12px;
 }
 
+.square-count {
+    font-weight: bold;
+    margin: 10px 0;
+    font-size: 17px;
+}
+
 .workspace {
-    width: min(1100px, 96%);
+    width: min(1200px, 96%);
     margin: auto;
     background: white;
     padding: 25px;
@@ -95,7 +111,7 @@ button {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 30px;
+    gap: 25px;
     flex-wrap: wrap;
 }
 
@@ -143,28 +159,26 @@ button {
     border: 1px solid #aaa;
     background: white;
     cursor: pointer;
-    transition: background .08s;
 }
 
 .cell:hover {
     background: #dbeafe;
 }
 
-.cell.filled-a {
+.cell.filled {
     background: #60a5fa;
 }
 
-.cell.filled-b {
-    background: #f59e0b;
-}
-
-.cell.result {
-    background: #22c55e;
+.result-grid .cell {
     cursor: default;
 }
 
+.result-grid .cell.result {
+    background: #22c55e;
+}
+
 .result-area {
-    margin-top: 35px;
+    margin-top: 40px;
 }
 
 .instructions {
@@ -241,7 +255,19 @@ button {
     Thousandths
 </button>
 
-<br>
+<h2>Number of Squares</h2>
+
+<button id="addSquareBtn" class="square-control">
+    + Add Square
+</button>
+
+<button id="removeSquareBtn" class="square-control">
+    − Remove Square
+</button>
+
+<div id="squareCount" class="square-count">
+    2 squares
+</div>
 
 <button id="clearBtn" class="clear">
     Clear Squares
@@ -255,41 +281,7 @@ button {
 <div class="workspace">
 
 ```
-<div class="squares">
-
-    <div class="square-area">
-
-        <div class="square-title">
-            First Number
-        </div>
-
-        <div id="valueA" class="value-display">
-            0.0
-        </div>
-
-        <div id="gridA" class="grid"></div>
-
-    </div>
-
-    <div id="operator" class="operator">
-        +
-    </div>
-
-    <div class="square-area">
-
-        <div class="square-title">
-            Second Number
-        </div>
-
-        <div id="valueB" class="value-display">
-            0.0
-        </div>
-
-        <div id="gridB" class="grid"></div>
-
-    </div>
-
-</div>
+<div id="squaresContainer" class="squares"></div>
 
 <div class="result-area">
 
@@ -300,17 +292,16 @@ button {
     </div>
 
     <div id="resultNumber" class="value-display">
-        0.0
+        0.00
     </div>
 
-    <div id="resultGrid" class="grid"></div>
+    <div id="resultGrid" class="grid result-grid"></div>
 
 </div>
 
 <div class="instructions">
     <strong>Click anywhere inside a vertical column.</strong><br>
-    The column will fill from the bottom up to where you clicked.
-    Click a filled area again to change its height.
+    The column fills from the bottom up to where you click.
 </div>
 ```
 
@@ -321,46 +312,49 @@ button {
 let operation = "add";
 let decimalPlace = "tenths";
 
-let values = {
-    a: 0,
-    b: 0
-};
+/*
+    Start with exactly 2 numbers.
+*/
+let values = [0, 0];
 
 
 /*
-    Each column represents the selected
-    decimal place.
-
-    Each column is divided into 10
-    smaller sections so you can click
-    at different heights.
+    Minimum is the original 2 squares.
+    More can be added whenever needed.
 */
+const MIN_SQUARES = 2;
+const MAX_SQUARES = 10;
 
+
+/*
+    Information for each decimal place.
+*/
 const placeInfo = {
 
     tenths: {
         columnValue: 0.1,
         cellValue: 0.01,
-        digits: 2,
-        label: "Tenths"
+        digits: 2
     },
 
     hundredths: {
         columnValue: 0.01,
         cellValue: 0.001,
-        digits: 3,
-        label: "Hundredths"
+        digits: 3
     },
 
     thousandths: {
         columnValue: 0.001,
         cellValue: 0.0001,
-        digits: 4,
-        label: "Thousandths"
+        digits: 4
     }
 
 };
 
+
+/*
+    Operation buttons
+*/
 
 function setOperation(newOperation) {
 
@@ -391,19 +385,14 @@ function setOperation(newOperation) {
             .classList.add("selected");
     }
 
-    const symbols = {
-        add: "+",
-        subtract: "−",
-        multiply: "×",
-        divide: "÷"
-    };
-
-    document.getElementById("operator").textContent =
-        symbols[operation];
-
+    updateOperatorDisplay();
     updateResult();
 }
 
+
+/*
+    Decimal place buttons
+*/
 
 function setDecimalPlace(place) {
 
@@ -429,257 +418,183 @@ function setDecimalPlace(place) {
             .classList.add("selected");
     }
 
-    values.a = 0;
-    values.b = 0;
+    /*
+        Reset the values when changing
+        decimal precision.
+    */
+    values = values.map(() => 0);
 
-    buildGrid("gridA", "a");
-    buildGrid("gridB", "b");
-
-    updateDisplay();
+    buildAllSquares();
     updateResult();
 }
 
 
 /*
-    Creates the vertical grid.
-
-    There are 10 vertical columns.
-    Every column is divided into 10
-    vertical cells.
-
-    Clicking a cell fills that column
-    from the bottom to that cell.
+    Add another number/square.
 */
 
-function buildGrid(id, number) {
+function addSquare() {
 
-    const grid = document.getElementById(id);
-
-    const info = placeInfo[decimalPlace];
-
-    grid.innerHTML = "";
-
-    const totalColumns = 10;
-
-    const cellsPerColumn = 10;
-
-    const currentValue = values[number];
-
-    /*
-        How many complete column units?
-    */
-    const completeColumns = Math.floor(
-        currentValue / info.columnValue + 0.0000001
-    );
-
-    /*
-        Remaining amount inside the next column.
-    */
-    const remainder =
-        currentValue -
-        (completeColumns * info.columnValue);
-
-    const partialCells = Math.round(
-        remainder / info.cellValue
-    );
-
-    for (
-        let columnIndex = 0;
-        columnIndex < totalColumns;
-        columnIndex++
-    ) {
-
-        const column =
-            document.createElement("div");
-
-        column.className = "column";
-
-        for (
-            let rowIndex = 0;
-            rowIndex < cellsPerColumn;
-            rowIndex++
-        ) {
-
-            const cell =
-                document.createElement("div");
-
-            cell.className = "cell";
-
-            /*
-                rowIndex 0 = top
-                rowIndex 9 = bottom
-
-                Convert that into a height
-                from the bottom.
-            */
-
-            const cellsFromBottom =
-                cellsPerColumn - rowIndex;
-
-            let filled = false;
-
-            if (columnIndex < completeColumns) {
-
-                filled = true;
-
-            } else if (
-                columnIndex === completeColumns &&
-                partialCells > 0 &&
-                cellsFromBottom <= partialCells
-            ) {
-
-                filled = true;
-            }
-
-            if (filled) {
-
-                cell.classList.add(
-                    number === "a"
-                        ? "filled-a"
-                        : "filled-b"
-                );
-            }
-
-            /*
-                Clicking ANY cell sets the height
-                of the entire column to that point.
-            */
-
-            cell.addEventListener("click", () => {
-
-                const clickedHeight =
-                    cellsFromBottom;
-
-                /*
-                    Columns before this one stay full.
-                    This column gets the clicked height.
-                    Columns after it become empty.
-                */
-
-                const newValue =
-                    (columnIndex * info.columnValue) +
-                    (clickedHeight * info.cellValue);
-
-                values[number] =
-                    Math.round(newValue * 10000) / 10000;
-
-                values[number] =
-                    Math.max(0, Math.min(1, values[number]));
-
-                buildGrid("gridA", "a");
-                buildGrid("gridB", "b");
-
-                updateDisplay();
-                updateResult();
-            });
-
-            column.appendChild(cell);
-        }
-
-        grid.appendChild(column);
-    }
-}
-
-
-function updateDisplay() {
-
-    const digits =
-        placeInfo[decimalPlace].digits;
-
-    document.getElementById("valueA").textContent =
-        values.a.toFixed(digits);
-
-    document.getElementById("valueB").textContent =
-        values.b.toFixed(digits);
-}
-
-
-function updateResult() {
-
-    const error =
-        document.getElementById("error");
-
-    error.textContent = "";
-
-    let result;
-
-    if (operation === "add") {
-
-        result =
-            values.a + values.b;
-
-    } else if (operation === "subtract") {
-
-        result =
-            values.a - values.b;
-
-    } else if (operation === "multiply") {
-
-        result =
-            values.a * values.b;
-
-    } else if (operation === "divide") {
-
-        if (values.b === 0) {
-
-            result = 0;
-
-            error.textContent =
-                "You cannot divide by zero.";
-
-        } else {
-
-            result =
-                values.a / values.b;
-        }
+    if (values.length >= MAX_SQUARES) {
+        return;
     }
 
-    result =
-        Math.round(result * 10000) / 10000;
+    values.push(0);
 
-    const digits =
-        placeInfo[decimalPlace].digits;
-
-    document.getElementById("resultNumber").textContent =
-        result.toFixed(digits);
-
-    buildResultGrid(result);
+    buildAllSquares();
+    updateResult();
 }
 
 
 /*
-    The result grid shows values between
-    0 and 1 visually.
+    Remove a number/square.
 
-    If multiplication or division produces
-    a result greater than 1, the number is
-    still shown above the grid.
+    It cannot remove the original 2.
 */
 
-function buildResultGrid(result) {
+function removeSquare() {
+
+    if (values.length <= MIN_SQUARES) {
+        return;
+    }
+
+    values.pop();
+
+    buildAllSquares();
+    updateResult();
+}
+
+
+/*
+    Creates one visual square.
+*/
+
+function createSquare(index) {
+
+    const area =
+        document.createElement("div");
+
+    area.className = "square-area";
+
+    const title =
+        document.createElement("div");
+
+    title.className = "square-title";
+
+    title.textContent =
+        "Number " + (index + 1);
+
+    const valueDisplay =
+        document.createElement("div");
+
+    valueDisplay.className =
+        "value-display";
+
+    valueDisplay.id =
+        "value-" + index;
 
     const grid =
-        document.getElementById("resultGrid");
+        document.createElement("div");
+
+    grid.className = "grid";
+
+    grid.id =
+        "grid-" + index;
+
+    area.appendChild(title);
+    area.appendChild(valueDisplay);
+    area.appendChild(grid);
+
+    buildGrid(grid, index);
+
+    return area;
+}
+
+
+/*
+    Build every number square.
+*/
+
+function buildAllSquares() {
+
+    const container =
+        document.getElementById("squaresContainer");
+
+    container.innerHTML = "";
+
+    for (
+        let i = 0;
+        i < values.length;
+        i++
+    ) {
+
+        /*
+            Add an operator before every
+            square except the first.
+        */
+
+        if (i > 0) {
+
+            const operator =
+                document.createElement("div");
+
+            operator.className = "operator";
+
+            const symbols = {
+                add: "+",
+                subtract: "−",
+                multiply: "×",
+                divide: "÷"
+            };
+
+            operator.textContent =
+                symbols[operation];
+
+            container.appendChild(operator);
+        }
+
+        container.appendChild(
+            createSquare(i)
+        );
+    }
+
+    updateSquareCount();
+}
+
+
+/*
+    Build the vertical grid for one number.
+*/
+
+function buildGrid(grid, index) {
+
+    const info =
+        placeInfo[decimalPlace];
 
     grid.innerHTML = "";
 
     const totalColumns = 10;
     const cellsPerColumn = 10;
 
-    const info =
-        placeInfo[decimalPlace];
+    const currentValue =
+        values[index];
 
-    /*
-        Only display the positive portion
-        that fits inside the square.
-    */
+    const completeColumns =
+        Math.floor(
+            currentValue /
+            info.columnValue +
+            0.0000001
+        );
 
-    const displayValue =
-        Math.max(0, Math.min(1, result));
+    const remainder =
+        currentValue -
+        (completeColumns *
+         info.columnValue);
 
-    const totalCells =
+    const partialCells =
         Math.round(
-            displayValue / info.cellValue
+            remainder /
+            info.cellValue
         );
 
     for (
@@ -704,12 +619,300 @@ function buildResultGrid(result) {
 
             cell.className = "cell";
 
-            const cellNumber =
-                columnIndex * cellsPerColumn +
-                (cellsPerColumn - rowIndex);
+            /*
+                Bottom cell = 1
+                Top cell = 10
+            */
 
-            if (cellNumber <= totalCells) {
-                cell.classList.add("result");
+            const cellsFromBottom =
+                cellsPerColumn -
+                rowIndex;
+
+            let filled = false;
+
+            if (
+                columnIndex <
+                completeColumns
+            ) {
+
+                filled = true;
+
+            } else if (
+                columnIndex ===
+                completeColumns &&
+                cellsFromBottom <=
+                partialCells
+            ) {
+
+                filled = true;
+            }
+
+            if (filled) {
+                cell.classList.add("filled");
+            }
+
+            /*
+                Clicking anywhere in the column
+                changes its height to the clicked
+                position.
+            */
+
+            cell.addEventListener(
+                "click",
+                () => {
+
+                    const clickedHeight =
+                        cellsFromBottom;
+
+                    const newValue =
+                        (columnIndex *
+                         info.columnValue) +
+
+                        (clickedHeight *
+                         info.cellValue);
+
+                    values[index] =
+                        Math.round(
+                            newValue * 10000
+                        ) / 10000;
+
+                    values[index] =
+                        Math.max(
+                            0,
+                            Math.min(
+                                1,
+                                values[index]
+                            )
+                        );
+
+                    buildAllSquares();
+                    updateResult();
+                }
+            );
+
+            column.appendChild(cell);
+        }
+
+        grid.appendChild(column);
+    }
+
+
+    /*
+        Update the displayed number.
+    */
+
+    const display =
+        document.getElementById(
+            "value-" + index
+        );
+
+    if (display) {
+
+        display.textContent =
+            values[index].toFixed(
+                info.digits
+            );
+    }
+}
+
+
+/*
+    Update the operator symbols.
+*/
+
+function updateOperatorDisplay() {
+
+    const symbols = {
+        add: "+",
+        subtract: "−",
+        multiply: "×",
+        divide: "÷"
+    };
+
+    document.querySelectorAll(
+        "#squaresContainer .operator"
+    ).forEach(operator => {
+
+        operator.textContent =
+            symbols[operation];
+    });
+}
+
+
+/*
+    Calculate the final result.
+*/
+
+function calculateResult() {
+
+    if (values.length === 0) {
+        return 0;
+    }
+
+    let result =
+        values[0];
+
+    if (operation === "add") {
+
+        result = values.reduce(
+            (total, value) =>
+                total + value,
+            0
+        );
+
+    } else if (operation === "subtract") {
+
+        result = values.slice(1).reduce(
+            (total, value) =>
+                total - value,
+            values[0]
+        );
+
+    } else if (operation === "multiply") {
+
+        result = values.reduce(
+            (total, value) =>
+                total * value,
+            1
+        );
+
+    } else if (operation === "divide") {
+
+        for (
+            let i = 1;
+            i < values.length;
+            i++
+        ) {
+
+            if (values[i] === 0) {
+                return null;
+            }
+
+            result =
+                result / values[i];
+        }
+    }
+
+    return Math.round(
+        result * 10000
+    ) / 10000;
+}
+
+
+/*
+    Update result display and grid.
+*/
+
+function updateResult() {
+
+    const error =
+        document.getElementById("error");
+
+    error.textContent = "";
+
+    const result =
+        calculateResult();
+
+    const info =
+        placeInfo[decimalPlace];
+
+    if (result === null) {
+
+        document.getElementById(
+            "resultNumber"
+        ).textContent = "Undefined";
+
+        error.textContent =
+            "You cannot divide by zero.";
+
+        buildResultGrid(0);
+        return;
+    }
+
+    document.getElementById(
+        "resultNumber"
+    ).textContent =
+        result.toFixed(info.digits);
+
+    buildResultGrid(result);
+}
+
+
+/*
+    Build the result grid.
+*/
+
+function buildResultGrid(result) {
+
+    const grid =
+        document.getElementById(
+            "resultGrid"
+        );
+
+    const info =
+        placeInfo[decimalPlace];
+
+    grid.innerHTML = "";
+
+    /*
+        The visual grid can represent
+        values from 0 through 1.
+    */
+
+    const displayValue =
+        Math.max(
+            0,
+            Math.min(
+                1,
+                result
+            )
+        );
+
+    const totalCells =
+        Math.round(
+            displayValue /
+            info.cellValue
+        );
+
+    const totalColumns = 10;
+    const cellsPerColumn = 10;
+
+    for (
+        let columnIndex = 0;
+        columnIndex < totalColumns;
+        columnIndex++
+    ) {
+
+        const column =
+            document.createElement("div");
+
+        column.className = "column";
+
+        for (
+            let rowIndex = 0;
+            rowIndex < cellsPerColumn;
+            rowIndex++
+        ) {
+
+            const cell =
+                document.createElement("div");
+
+            cell.className = "cell";
+
+            const cellNumber =
+                columnIndex *
+                cellsPerColumn +
+                (cellsPerColumn -
+                 rowIndex);
+
+            if (
+                cellNumber <=
+                totalCells
+            ) {
+
+                cell.classList.add(
+                    "result"
+                );
             }
 
             column.appendChild(cell);
@@ -719,6 +922,55 @@ function buildResultGrid(result) {
     }
 }
 
+
+/*
+    Update the square counter and
+    disable Remove at the minimum.
+*/
+
+function updateSquareCount() {
+
+    const count =
+        values.length;
+
+    document.getElementById(
+        "squareCount"
+    ).textContent =
+        count +
+        (count === 1
+            ? " square"
+            : " squares");
+
+    document.getElementById(
+        "removeSquareBtn"
+    ).disabled =
+        count <= MIN_SQUARES;
+
+    document.getElementById(
+        "addSquareBtn"
+    ).disabled =
+        count >= MAX_SQUARES;
+}
+
+
+/*
+    Clear all numbers but keep
+    the current number of squares.
+*/
+
+function clearSquares() {
+
+    values =
+        values.map(() => 0);
+
+    buildAllSquares();
+    updateResult();
+}
+
+
+/*
+    Button listeners
+*/
 
 document.getElementById("addBtn")
     .addEventListener(
@@ -764,25 +1016,32 @@ document.getElementById("thousandthsBtn")
     );
 
 
+document.getElementById("addSquareBtn")
+    .addEventListener(
+        "click",
+        addSquare
+    );
+
+document.getElementById("removeSquareBtn")
+    .addEventListener(
+        "click",
+        removeSquare
+    );
+
 document.getElementById("clearBtn")
-    .addEventListener("click", () => {
-
-        values.a = 0;
-        values.b = 0;
-
-        buildGrid("gridA", "a");
-        buildGrid("gridB", "b");
-
-        updateDisplay();
-        updateResult();
-    });
+    .addEventListener(
+        "click",
+        clearSquares
+    );
 
 
-buildGrid("gridA", "a");
-buildGrid("gridB", "b");
+/*
+    Start with the original 2 squares.
+*/
 
-updateDisplay();
+buildAllSquares();
 updateResult();
+updateSquareCount();
 
 </script>
 
