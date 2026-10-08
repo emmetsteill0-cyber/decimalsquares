@@ -4,6 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Decimal Squares</title>
 
 <style>
@@ -27,6 +28,7 @@ header {
 
 header h1 {
     margin: 0;
+    font-size: 30px;
 }
 
 header p {
@@ -35,17 +37,22 @@ header p {
 
 .controls {
     background: white;
-    width: min(900px, 94%);
+    width: min(950px, 94%);
     margin: 20px auto;
     padding: 20px;
     border-radius: 14px;
     box-shadow: 0 4px 15px rgba(0,0,0,.1);
 }
 
+h2 {
+    margin: 12px 0 8px;
+    font-size: 20px;
+}
+
 button {
     border: none;
     border-radius: 8px;
-    padding: 12px 20px;
+    padding: 12px 18px;
     font-size: 16px;
     cursor: pointer;
     margin: 4px;
@@ -103,7 +110,7 @@ button {
 }
 
 .value-display {
-    font-size: 25px;
+    font-size: 27px;
     font-weight: bold;
     margin-bottom: 15px;
 }
@@ -133,9 +140,10 @@ button {
 
 .cell {
     flex: 1;
-    border: 1px solid #bbb;
+    border: 1px solid #aaa;
     background: white;
     cursor: pointer;
+    transition: background .08s;
 }
 
 .cell:hover {
@@ -155,10 +163,6 @@ button {
     cursor: default;
 }
 
-.cell.top-cell {
-    border-top: 3px solid #222;
-}
-
 .result-area {
     margin-top: 35px;
 }
@@ -166,7 +170,14 @@ button {
 .instructions {
     margin-top: 25px;
     color: #555;
-    font-size: 15px;
+    line-height: 1.5;
+}
+
+.error {
+    color: #dc2626;
+    font-weight: bold;
+    min-height: 24px;
+    margin-top: 10px;
 }
 
 @media (max-width: 650px) {
@@ -179,6 +190,10 @@ button {
     .operator {
         width: 100%;
     }
+
+    button {
+        padding: 11px 14px;
+    }
 }
 </style>
 
@@ -188,7 +203,7 @@ button {
 
 <header>
     <h1>Decimal Squares</h1>
-    <p>Build decimals using vertical columns</p>
+    <p>Build decimals with vertical columns</p>
 </header>
 
 <div class="controls">
@@ -202,6 +217,14 @@ button {
 
 <button id="subtractBtn" class="operation">
     Subtract −
+</button>
+
+<button id="multiplyBtn" class="operation">
+    Multiply ×
+</button>
+
+<button id="divideBtn" class="operation">
+    Divide ÷
 </button>
 
 <h2>Decimal Place</h2>
@@ -223,6 +246,8 @@ button {
 <button id="clearBtn" class="clear">
     Clear Squares
 </button>
+
+<div id="error" class="error"></div>
 ```
 
 </div>
@@ -283,7 +308,9 @@ button {
 </div>
 
 <div class="instructions">
-    Click the top square of a column to fill or remove the entire vertical column.
+    <strong>Click anywhere inside a vertical column.</strong><br>
+    The column will fill from the bottom up to where you clicked.
+    Click a filled area again to change its height.
 </div>
 ```
 
@@ -299,27 +326,37 @@ let values = {
     b: 0
 };
 
+
+/*
+    Each column represents the selected
+    decimal place.
+
+    Each column is divided into 10
+    smaller sections so you can click
+    at different heights.
+*/
+
 const placeInfo = {
 
     tenths: {
-        columns: 10,
-        rows: 10,
         columnValue: 0.1,
-        digits: 1
+        cellValue: 0.01,
+        digits: 2,
+        label: "Tenths"
     },
 
     hundredths: {
-        columns: 10,
-        rows: 10,
         columnValue: 0.01,
-        digits: 2
+        cellValue: 0.001,
+        digits: 3,
+        label: "Hundredths"
     },
 
     thousandths: {
-        columns: 20,
-        rows: 20,
         columnValue: 0.001,
-        digits: 3
+        cellValue: 0.0001,
+        digits: 4,
+        label: "Thousandths"
     }
 
 };
@@ -329,14 +366,40 @@ function setOperation(newOperation) {
 
     operation = newOperation;
 
-    document.getElementById("addBtn")
-        .classList.toggle("selected", operation === "add");
+    document.querySelectorAll(".operation")
+        .forEach(button => {
+            button.classList.remove("selected");
+        });
 
-    document.getElementById("subtractBtn")
-        .classList.toggle("selected", operation === "subtract");
+    if (operation === "add") {
+        document.getElementById("addBtn")
+            .classList.add("selected");
+    }
+
+    if (operation === "subtract") {
+        document.getElementById("subtractBtn")
+            .classList.add("selected");
+    }
+
+    if (operation === "multiply") {
+        document.getElementById("multiplyBtn")
+            .classList.add("selected");
+    }
+
+    if (operation === "divide") {
+        document.getElementById("divideBtn")
+            .classList.add("selected");
+    }
+
+    const symbols = {
+        add: "+",
+        subtract: "−",
+        multiply: "×",
+        divide: "÷"
+    };
 
     document.getElementById("operator").textContent =
-        operation === "add" ? "+" : "−";
+        symbols[operation];
 
     updateResult();
 }
@@ -346,9 +409,10 @@ function setDecimalPlace(place) {
 
     decimalPlace = place;
 
-    document.querySelectorAll(".place").forEach(button => {
-        button.classList.remove("selected");
-    });
+    document.querySelectorAll(".place")
+        .forEach(button => {
+            button.classList.remove("selected");
+        });
 
     if (place === "tenths") {
         document.getElementById("tenthsBtn")
@@ -376,68 +440,128 @@ function setDecimalPlace(place) {
 }
 
 
+/*
+    Creates the vertical grid.
+
+    There are 10 vertical columns.
+    Every column is divided into 10
+    vertical cells.
+
+    Clicking a cell fills that column
+    from the bottom to that cell.
+*/
+
 function buildGrid(id, number) {
 
     const grid = document.getElementById(id);
+
     const info = placeInfo[decimalPlace];
 
     grid.innerHTML = "";
 
-    const filledColumns = Math.round(
-        values[number] / info.columnValue
+    const totalColumns = 10;
+
+    const cellsPerColumn = 10;
+
+    const currentValue = values[number];
+
+    /*
+        How many complete column units?
+    */
+    const completeColumns = Math.floor(
+        currentValue / info.columnValue + 0.0000001
     );
 
-    for (let columnIndex = 0;
-         columnIndex < info.columns;
-         columnIndex++) {
+    /*
+        Remaining amount inside the next column.
+    */
+    const remainder =
+        currentValue -
+        (completeColumns * info.columnValue);
 
-        const column = document.createElement("div");
+    const partialCells = Math.round(
+        remainder / info.cellValue
+    );
+
+    for (
+        let columnIndex = 0;
+        columnIndex < totalColumns;
+        columnIndex++
+    ) {
+
+        const column =
+            document.createElement("div");
 
         column.className = "column";
 
-        const isFilled =
-            columnIndex < filledColumns;
+        for (
+            let rowIndex = 0;
+            rowIndex < cellsPerColumn;
+            rowIndex++
+        ) {
 
-        for (let rowIndex = 0;
-             rowIndex < info.rows;
-             rowIndex++) {
-
-            const cell = document.createElement("div");
+            const cell =
+                document.createElement("div");
 
             cell.className = "cell";
 
-            if (isFilled) {
+            /*
+                rowIndex 0 = top
+                rowIndex 9 = bottom
+
+                Convert that into a height
+                from the bottom.
+            */
+
+            const cellsFromBottom =
+                cellsPerColumn - rowIndex;
+
+            let filled = false;
+
+            if (columnIndex < completeColumns) {
+
+                filled = true;
+
+            } else if (
+                columnIndex === completeColumns &&
+                partialCells > 0 &&
+                cellsFromBottom <= partialCells
+            ) {
+
+                filled = true;
+            }
+
+            if (filled) {
 
                 cell.classList.add(
                     number === "a"
                         ? "filled-a"
                         : "filled-b"
                 );
-
             }
 
             /*
-             * Clicking ANY part of a column changes
-             * the whole vertical column.
-             */
+                Clicking ANY cell sets the height
+                of the entire column to that point.
+            */
+
             cell.addEventListener("click", () => {
 
-                const currentColumns = Math.round(
-                    values[number] / info.columnValue
-                );
+                const clickedHeight =
+                    cellsFromBottom;
 
-                if (columnIndex < currentColumns) {
+                /*
+                    Columns before this one stay full.
+                    This column gets the clicked height.
+                    Columns after it become empty.
+                */
 
-                    values[number] -= info.columnValue;
-
-                } else {
-
-                    values[number] += info.columnValue;
-
-                }
+                const newValue =
+                    (columnIndex * info.columnValue) +
+                    (clickedHeight * info.cellValue);
 
                 values[number] =
-                    Math.round(values[number] * 1000) / 1000;
+                    Math.round(newValue * 10000) / 10000;
 
                 values[number] =
                     Math.max(0, Math.min(1, values[number]));
@@ -472,16 +596,46 @@ function updateDisplay() {
 
 function updateResult() {
 
+    const error =
+        document.getElementById("error");
+
+    error.textContent = "";
+
     let result;
 
     if (operation === "add") {
-        result = values.a + values.b;
-    } else {
-        result = values.a - values.b;
+
+        result =
+            values.a + values.b;
+
+    } else if (operation === "subtract") {
+
+        result =
+            values.a - values.b;
+
+    } else if (operation === "multiply") {
+
+        result =
+            values.a * values.b;
+
+    } else if (operation === "divide") {
+
+        if (values.b === 0) {
+
+            result = 0;
+
+            error.textContent =
+                "You cannot divide by zero.";
+
+        } else {
+
+            result =
+                values.a / values.b;
+        }
     }
 
     result =
-        Math.round(result * 1000) / 1000;
+        Math.round(result * 10000) / 10000;
 
     const digits =
         placeInfo[decimalPlace].digits;
@@ -493,30 +647,44 @@ function updateResult() {
 }
 
 
+/*
+    The result grid shows values between
+    0 and 1 visually.
+
+    If multiplication or division produces
+    a result greater than 1, the number is
+    still shown above the grid.
+*/
+
 function buildResultGrid(result) {
 
     const grid =
         document.getElementById("resultGrid");
 
+    grid.innerHTML = "";
+
+    const totalColumns = 10;
+    const cellsPerColumn = 10;
+
     const info =
         placeInfo[decimalPlace];
 
-    grid.innerHTML = "";
+    /*
+        Only display the positive portion
+        that fits inside the square.
+    */
 
-    const positiveResult =
-        Math.max(0, result);
+    const displayValue =
+        Math.max(0, Math.min(1, result));
 
-    const filledColumns =
-        Math.min(
-            info.columns,
-            Math.round(
-                positiveResult / info.columnValue
-            )
+    const totalCells =
+        Math.round(
+            displayValue / info.cellValue
         );
 
     for (
         let columnIndex = 0;
-        columnIndex < info.columns;
+        columnIndex < totalColumns;
         columnIndex++
     ) {
 
@@ -525,12 +693,9 @@ function buildResultGrid(result) {
 
         column.className = "column";
 
-        const isFilled =
-            columnIndex < filledColumns;
-
         for (
             let rowIndex = 0;
-            rowIndex < info.rows;
+            rowIndex < cellsPerColumn;
             rowIndex++
         ) {
 
@@ -539,7 +704,11 @@ function buildResultGrid(result) {
 
             cell.className = "cell";
 
-            if (isFilled) {
+            const cellNumber =
+                columnIndex * cellsPerColumn +
+                (cellsPerColumn - rowIndex);
+
+            if (cellNumber <= totalCells) {
                 cell.classList.add("result");
             }
 
@@ -563,6 +732,19 @@ document.getElementById("subtractBtn")
         () => setOperation("subtract")
     );
 
+document.getElementById("multiplyBtn")
+    .addEventListener(
+        "click",
+        () => setOperation("multiply")
+    );
+
+document.getElementById("divideBtn")
+    .addEventListener(
+        "click",
+        () => setOperation("divide")
+    );
+
+
 document.getElementById("tenthsBtn")
     .addEventListener(
         "click",
@@ -581,6 +763,7 @@ document.getElementById("thousandthsBtn")
         () => setDecimalPlace("thousandths")
     );
 
+
 document.getElementById("clearBtn")
     .addEventListener("click", () => {
 
@@ -597,6 +780,7 @@ document.getElementById("clearBtn")
 
 buildGrid("gridA", "a");
 buildGrid("gridB", "b");
+
 updateDisplay();
 updateResult();
 
