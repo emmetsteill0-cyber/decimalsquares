@@ -4,434 +4,586 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Decimal Squares</title>
 
 <style>
-* {
-    box-sizing: border-box;
-}
+    * {
+        box-sizing: border-box;
+    }
 
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f3f4f6;
-    color: #222;
-    text-align: center;
-}
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f4f4f4;
+        color: #222;
+        text-align: center;
+    }
 
-header {
-    background: #2563eb;
-    color: white;
-    padding: 20px;
-}
+    h1 {
+        margin: 20px 0 8px;
+    }
 
-header h1 {
-    margin: 0;
-    font-size: 30px;
-}
+    .controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 15px auto;
+    }
 
-header p {
-    margin: 6px 0 0;
-}
+    select,
+    button {
+        padding: 10px 14px;
+        font-size: 16px;
+        border: 1px solid #aaa;
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+    }
 
-.controls {
-    background: white;
-    width: min(1000px, 94%);
-    margin: 20px auto;
-    padding: 20px;
-    border-radius: 14px;
-    box-shadow: 0 4px 15px rgba(0,0,0,.1);
-}
+    button:hover,
+    select:hover {
+        background: #eee;
+    }
 
-h2 {
-    margin: 12px 0 8px;
-    font-size: 20px;
-}
+    button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
 
-button {
-    border: none;
-    border-radius: 8px;
-    padding: 12px 18px;
-    font-size: 16px;
-    cursor: pointer;
-    margin: 4px;
-}
+    #squares {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 18px;
+        flex-wrap: wrap;
+        margin: 20px auto;
+        max-width: 1400px;
+    }
 
-.operation {
-    background: #e5e7eb;
-}
+    .number-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
 
-.operation.selected {
-    background: #2563eb;
-    color: white;
-}
+    .number-label {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
 
-.place {
-    background: #e5e7eb;
-}
-
-.place.selected {
-    background: #16a34a;
-    color: white;
-}
-
-.square-control {
-    background: #7c3aed;
-    color: white;
-}
-
-.square-control:disabled {
-    background: #9ca3af;
-    cursor: not-allowed;
-}
-
-.clear {
-    background: #dc2626;
-    color: white;
-    margin-top: 12px;
-}
-
-.square-count {
-    font-weight: bold;
-    margin: 10px 0;
-    font-size: 17px;
-}
-
-.workspace {
-    width: min(1200px, 96%);
-    margin: auto;
-    background: white;
-    padding: 25px;
-    border-radius: 14px;
-    box-shadow: 0 4px 15px rgba(0,0,0,.1);
-}
-
-.squares {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 25px;
-    flex-wrap: wrap;
-}
-
-.square-area {
-    min-width: 280px;
-}
-
-.square-title {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 8px;
-}
-
-.value-display {
-    font-size: 27px;
-    font-weight: bold;
-    margin-bottom: 15px;
-}
-
-.operator {
-    font-size: 45px;
-    font-weight: bold;
-}
-
-.grid {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: stretch;
-    margin: auto;
-    border: 3px solid #222;
-    background: white;
-    width: 300px;
-    height: 300px;
-}
-
-.column {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-}
-
-.cell {
-    flex: 1;
-    border: 1px solid #aaa;
-    background: white;
-    cursor: pointer;
-}
-
-.cell:hover {
-    background: #dbeafe;
-}
-
-.cell.filled {
-    background: #60a5fa;
-}
-
-.result-grid .cell {
-    cursor: default;
-}
-
-.result-grid .cell.result {
-    background: #22c55e;
-}
-
-.result-area {
-    margin-top: 40px;
-}
-
-.instructions {
-    margin-top: 25px;
-    color: #555;
-    line-height: 1.5;
-}
-
-.error {
-    color: #dc2626;
-    font-weight: bold;
-    min-height: 24px;
-    margin-top: 10px;
-}
-
-@media (max-width: 650px) {
-
-    .grid {
-        width: 260px;
-        height: 260px;
+    .number-value {
+        font-size: 22px;
+        font-weight: bold;
+        margin-top: 8px;
+        min-width: 90px;
     }
 
     .operator {
-        width: 100%;
+        font-size: 34px;
+        font-weight: bold;
+        margin-top: 150px;
     }
 
-    button {
-        padding: 11px 14px;
+    /* TENTHS */
+    .grid.tenths {
+        display: grid;
+        grid-template-columns: repeat(10, 34px);
+        grid-template-rows: 34px;
+        gap: 2px;
     }
-}
+
+    /* HUNDREDTHS */
+    .grid.hundredths {
+        display: grid;
+        grid-template-columns: repeat(10, 28px);
+        grid-template-rows: repeat(10, 28px);
+        gap: 2px;
+    }
+
+    /* THOUSANDTHS */
+    .grid.thousandths {
+        display: grid;
+        grid-template-columns: repeat(20, 18px);
+        grid-template-rows: repeat(50, 18px);
+        gap: 1px;
+        max-height: 600px;
+    }
+
+    .cell {
+        border: 1px solid #777;
+        background: white;
+        cursor: pointer;
+        transition: background 0.1s;
+    }
+
+    .cell:hover {
+        background: #ddd;
+    }
+
+    .cell.filled {
+        background: #4b8df8;
+    }
+
+    .result-section {
+        margin: 30px auto;
+        padding: 20px;
+        max-width: 1000px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+
+    .result-title {
+        font-size: 22px;
+        font-weight: bold;
+        margin-bottom: 12px;
+    }
+
+    .result-value {
+        font-size: 30px;
+        font-weight: bold;
+        margin-top: 15px;
+    }
+
+    #resultGrid {
+        display: inline-grid;
+        margin-top: 10px;
+    }
+
+    .hint {
+        color: #666;
+        margin-top: 5px;
+        font-size: 14px;
+    }
+
+    @media (max-width: 700px) {
+        .grid.tenths {
+            grid-template-columns: repeat(10, 25px);
+            grid-template-rows: 25px;
+        }
+
+        .grid.hundredths {
+            grid-template-columns: repeat(10, 22px);
+            grid-template-rows: repeat(10, 22px);
+        }
+
+        .grid.thousandths {
+            grid-template-columns: repeat(20, 12px);
+            grid-template-rows: repeat(50, 12px);
+        }
+    }
 </style>
 
 </head>
 
 <body>
 
-<header>
-    <h1>Decimal Squares</h1>
-    <p>Build decimals with vertical columns</p>
-</header>
+<h1>Decimal Squares</h1>
 
 <div class="controls">
 
 ```
-<h2>Operation</h2>
+<label>
+    Place:
+    <select id="placeSelect">
+        <option value="tenths">Tenths</option>
+        <option value="hundredths">Hundredths</option>
+        <option value="thousandths">Thousandths</option>
+    </select>
+</label>
 
-<button id="addBtn" class="operation selected">
-    Add +
-</button>
+<label>
+    Operation:
+    <select id="operationSelect">
+        <option value="add">Addition (+)</option>
+        <option value="subtract">Subtraction (−)</option>
+        <option value="multiply">Multiplication (×)</option>
+        <option value="divide">Division (÷)</option>
+    </select>
+</label>
 
-<button id="subtractBtn" class="operation">
-    Subtract −
-</button>
-
-<button id="multiplyBtn" class="operation">
-    Multiply ×
-</button>
-
-<button id="divideBtn" class="operation">
-    Divide ÷
-</button>
-
-<h2>Decimal Place</h2>
-
-<button id="tenthsBtn" class="place selected">
-    Tenths
-</button>
-
-<button id="hundredthsBtn" class="place">
-    Hundredths
-</button>
-
-<button id="thousandthsBtn" class="place">
-    Thousandths
-</button>
-
-<h2>Number of Squares</h2>
-
-<button id="addSquareBtn" class="square-control">
-    + Add Square
-</button>
-
-<button id="removeSquareBtn" class="square-control">
-    − Remove Square
-</button>
-
-<div id="squareCount" class="square-count">
-    2 squares
-</div>
-
-<button id="clearBtn" class="clear">
-    Clear Squares
-</button>
-
-<div id="error" class="error"></div>
+<button id="addButton">＋ Add Square</button>
+<button id="removeButton">− Remove Square</button>
+<button id="clearButton">Clear</button>
 ```
 
 </div>
 
-<div class="workspace">
+<div class="hint">
+    Click the squares to build each decimal.
+</div>
+
+<div id="squares"></div>
+
+<div class="result-section">
+    <div class="result-title">Result</div>
 
 ```
-<div id="squaresContainer" class="squares"></div>
+<div id="resultGrid"></div>
 
-<div class="result-area">
-
-    <div class="operator">=</div>
-
-    <div class="square-title">
-        Result
-    </div>
-
-    <div id="resultNumber" class="value-display">
-        0.00
-    </div>
-
-    <div id="resultGrid" class="grid result-grid"></div>
-
-</div>
-
-<div class="instructions">
-    <strong>Click anywhere inside a vertical column.</strong><br>
-    The column fills from the bottom up to where you click.
-</div>
+<div class="result-value" id="resultValue">0</div>
 ```
 
 </div>
 
 <script>
 
-let operation = "add";
-let decimalPlace = "tenths";
-
-/*
-    Start with exactly 2 numbers.
-*/
 let values = [0, 0];
 
-
-/*
-    Minimum is the original 2 squares.
-    More can be added whenever needed.
-*/
 const MIN_SQUARES = 2;
 const MAX_SQUARES = 10;
 
+const placeSelect = document.getElementById("placeSelect");
+const operationSelect = document.getElementById("operationSelect");
+const squaresContainer = document.getElementById("squares");
+const resultGrid = document.getElementById("resultGrid");
+const resultValue = document.getElementById("resultValue");
 
-/*
-    Information for each decimal place.
-*/
-const placeInfo = {
-
-    tenths: {
-        columnValue: 0.1,
-        cellValue: 0.01,
-        digits: 2
-    },
-
-    hundredths: {
-        columnValue: 0.01,
-        cellValue: 0.001,
-        digits: 3
-    },
-
-    thousandths: {
-        columnValue: 0.001,
-        cellValue: 0.0001,
-        digits: 4
-    }
-
-};
+const addButton = document.getElementById("addButton");
+const removeButton = document.getElementById("removeButton");
+const clearButton = document.getElementById("clearButton");
 
 
-/*
-    Operation buttons
-*/
+/* -------------------------------------------------
+   PLACE SETTINGS
+------------------------------------------------- */
 
-function setOperation(newOperation) {
+function getPlaceInfo() {
 
-    operation = newOperation;
-
-    document.querySelectorAll(".operation")
-        .forEach(button => {
-            button.classList.remove("selected");
-        });
-
-    if (operation === "add") {
-        document.getElementById("addBtn")
-            .classList.add("selected");
-    }
-
-    if (operation === "subtract") {
-        document.getElementById("subtractBtn")
-            .classList.add("selected");
-    }
-
-    if (operation === "multiply") {
-        document.getElementById("multiplyBtn")
-            .classList.add("selected");
-    }
-
-    if (operation === "divide") {
-        document.getElementById("divideBtn")
-            .classList.add("selected");
-    }
-
-    updateOperatorDisplay();
-    updateResult();
-}
-
-
-/*
-    Decimal place buttons
-*/
-
-function setDecimalPlace(place) {
-
-    decimalPlace = place;
-
-    document.querySelectorAll(".place")
-        .forEach(button => {
-            button.classList.remove("selected");
-        });
+    const place = placeSelect.value;
 
     if (place === "tenths") {
-        document.getElementById("tenthsBtn")
-            .classList.add("selected");
+        return {
+            className: "tenths",
+            cellValue: 0.1,
+            columns: 10,
+            rows: 1,
+            decimals: 1
+        };
     }
 
     if (place === "hundredths") {
-        document.getElementById("hundredthsBtn")
-            .classList.add("selected");
+        return {
+            className: "hundredths",
+            cellValue: 0.01,
+            columns: 10,
+            rows: 10,
+            decimals: 2
+        };
     }
 
-    if (place === "thousandths") {
-        document.getElementById("thousandthsBtn")
-            .classList.add("selected");
-    }
-
-    /*
-        Reset the values when changing
-        decimal precision.
-    */
-    values = values.map(() => 0);
-
-    buildAllSquares();
-    updateResult();
+    return {
+        className: "thousandths",
+        cellValue: 0.001,
+        columns: 20,
+        rows: 50,
+        decimals: 3
+    };
 }
 
 
-/*
-    Add another number/square.
-*/
+/* -------------------------------------------------
+   CREATE ONE DECIMAL SQUARE
+------------------------------------------------- */
+
+function createSquare(index) {
+
+    const info = getPlaceInfo();
+
+    const box = document.createElement("div");
+    box.className = "number-box";
+
+    const label = document.createElement("div");
+    label.className = "number-label";
+    label.textContent = "Number " + (index + 1);
+
+    const grid = document.createElement("div");
+    grid.className = "grid " + info.className;
+
+    /*
+       Total number of cells:
+       Tenths       = 10
+       Hundredths   = 100
+       Thousandths  = 1000
+    */
+
+    const totalCells = info.columns * info.rows;
+
+    for (let i = 0; i < totalCells; i++) {
+
+        const cell = document.createElement("div");
+        cell.className = "cell";
+
+        /*
+           Store the value represented by this cell.
+        */
+        const cellIndex = i;
+
+        cell.addEventListener("click", function() {
+
+            /*
+               Clicking a cell fills from the beginning
+               of the grid through the clicked cell.
+            */
+            values[index] = (cellIndex + 1) * info.cellValue;
+
+            /*
+               Prevent tiny floating point errors.
+            */
+            values[index] = Number(
+                values[index].toFixed(info.decimals)
+            );
+
+            updateAllSquares();
+
+        });
+
+        grid.appendChild(cell);
+    }
+
+    const valueDisplay = document.createElement("div");
+    valueDisplay.className = "number-value";
+    valueDisplay.id = "value-" + index;
+
+    box.appendChild(label);
+    box.appendChild(grid);
+    box.appendChild(valueDisplay);
+
+    return box;
+}
+
+
+/* -------------------------------------------------
+   BUILD ALL NUMBER SQUARES
+------------------------------------------------- */
+
+function buildAllSquares() {
+
+    squaresContainer.innerHTML = "";
+
+    for (let i = 0; i < values.length; i++) {
+
+        squaresContainer.appendChild(
+            createSquare(i)
+        );
+
+        if (i < values.length - 1) {
+
+            const operator = document.createElement("div");
+            operator.className = "operator";
+
+            operator.textContent =
+                getOperatorSymbol();
+
+            squaresContainer.appendChild(operator);
+        }
+    }
+
+    updateAllSquares();
+}
+
+
+/* -------------------------------------------------
+   OPERATOR SYMBOL
+------------------------------------------------- */
+
+function getOperatorSymbol() {
+
+    const operation = operationSelect.value;
+
+    if (operation === "add") {
+        return "+";
+    }
+
+    if (operation === "subtract") {
+        return "−";
+    }
+
+    if (operation === "multiply") {
+        return "×";
+    }
+
+    return "÷";
+}
+
+
+/* -------------------------------------------------
+   UPDATE SQUARES
+------------------------------------------------- */
+
+function updateAllSquares() {
+
+    const info = getPlaceInfo();
+
+    const boxes =
+        document.querySelectorAll(".number-box");
+
+    boxes.forEach((box, index) => {
+
+        const cells =
+            box.querySelectorAll(".cell");
+
+        const amount =
+            Math.round(values[index] / info.cellValue);
+
+        cells.forEach((cell, cellIndex) => {
+
+            if (cellIndex < amount) {
+                cell.classList.add("filled");
+            } else {
+                cell.classList.remove("filled");
+            }
+
+        });
+
+        const display =
+            document.getElementById("value-" + index);
+
+        if (display) {
+
+            display.textContent =
+                values[index].toFixed(info.decimals);
+
+        }
+
+    });
+
+    calculateResult();
+    updateButtons();
+}
+
+
+/* -------------------------------------------------
+   CALCULATE RESULT
+------------------------------------------------- */
+
+function calculateResult() {
+
+    const operation =
+        operationSelect.value;
+
+    let result = values[0];
+
+    if (operation === "add") {
+
+        result = values.reduce(
+            (total, value) => total + value,
+            0
+        );
+
+    }
+
+    else if (operation === "subtract") {
+
+        result = values[0];
+
+        for (let i = 1; i < values.length; i++) {
+            result -= values[i];
+        }
+
+    }
+
+    else if (operation === "multiply") {
+
+        result = values.reduce(
+            (total, value) => total * value,
+            1
+        );
+
+    }
+
+    else if (operation === "divide") {
+
+        result = values[0];
+
+        for (let i = 1; i < values.length; i++) {
+
+            if (values[i] === 0) {
+                result = NaN;
+                break;
+            }
+
+            result /= values[i];
+        }
+
+    }
+
+    if (!Number.isNaN(result)) {
+
+        /*
+           Remove floating point errors.
+        */
+        result =
+            Number(result.toFixed(6));
+
+        resultValue.textContent =
+            result.toString();
+
+    } else {
+
+        resultValue.textContent =
+            "Cannot divide by 0";
+    }
+
+    buildResultGrid(result);
+}
+
+
+/* -------------------------------------------------
+   RESULT GRID
+------------------------------------------------- */
+
+function buildResultGrid(result) {
+
+    resultGrid.innerHTML = "";
+
+    if (!Number.isFinite(result) || result <= 0) {
+        return;
+    }
+
+    const info = getPlaceInfo();
+
+    /*
+       The visual result grid represents 0–1.
+       Values greater than 1 are shown numerically.
+    */
+
+    const visualResult =
+        Math.min(result, 1);
+
+    const amount =
+        Math.round(
+            visualResult / info.cellValue
+        );
+
+    resultGrid.className =
+        "grid " + info.className;
+
+    const totalCells =
+        info.columns * info.rows;
+
+    for (let i = 0; i < totalCells; i++) {
+
+        const cell =
+            document.createElement("div");
+
+        cell.className = "cell";
+
+        if (i < amount) {
+            cell.classList.add("filled");
+        }
+
+        resultGrid.appendChild(cell);
+    }
+}
+
+
+/* -------------------------------------------------
+   ADD SQUARE
+------------------------------------------------- */
 
 function addSquare() {
 
@@ -442,15 +594,12 @@ function addSquare() {
     values.push(0);
 
     buildAllSquares();
-    updateResult();
 }
 
 
-/*
-    Remove a number/square.
-
-    It cannot remove the original 2.
-*/
+/* -------------------------------------------------
+   REMOVE SQUARE
+------------------------------------------------- */
 
 function removeSquare() {
 
@@ -461,587 +610,83 @@ function removeSquare() {
     values.pop();
 
     buildAllSquares();
-    updateResult();
 }
 
 
-/*
-    Creates one visual square.
-*/
-
-function createSquare(index) {
-
-    const area =
-        document.createElement("div");
-
-    area.className = "square-area";
-
-    const title =
-        document.createElement("div");
-
-    title.className = "square-title";
-
-    title.textContent =
-        "Number " + (index + 1);
-
-    const valueDisplay =
-        document.createElement("div");
-
-    valueDisplay.className =
-        "value-display";
-
-    valueDisplay.id =
-        "value-" + index;
-
-    const grid =
-        document.createElement("div");
-
-    grid.className = "grid";
-
-    grid.id =
-        "grid-" + index;
-
-    area.appendChild(title);
-    area.appendChild(valueDisplay);
-    area.appendChild(grid);
-
-    buildGrid(grid, index);
-
-    return area;
-}
-
-
-/*
-    Build every number square.
-*/
-
-function buildAllSquares() {
-
-    const container =
-        document.getElementById("squaresContainer");
-
-    container.innerHTML = "";
-
-    for (
-        let i = 0;
-        i < values.length;
-        i++
-    ) {
-
-        /*
-            Add an operator before every
-            square except the first.
-        */
-
-        if (i > 0) {
-
-            const operator =
-                document.createElement("div");
-
-            operator.className = "operator";
-
-            const symbols = {
-                add: "+",
-                subtract: "−",
-                multiply: "×",
-                divide: "÷"
-            };
-
-            operator.textContent =
-                symbols[operation];
-
-            container.appendChild(operator);
-        }
-
-        container.appendChild(
-            createSquare(i)
-        );
-    }
-
-    updateSquareCount();
-}
-
-
-/*
-    Build the vertical grid for one number.
-*/
-
-function buildGrid(grid, index) {
-
-    const info =
-        placeInfo[decimalPlace];
-
-    grid.innerHTML = "";
-
-    const totalColumns = 10;
-    const cellsPerColumn = 10;
-
-    const currentValue =
-        values[index];
-
-    const completeColumns =
-        Math.floor(
-            currentValue /
-            info.columnValue +
-            0.0000001
-        );
-
-    const remainder =
-        currentValue -
-        (completeColumns *
-         info.columnValue);
-
-    const partialCells =
-        Math.round(
-            remainder /
-            info.cellValue
-        );
-
-    for (
-        let columnIndex = 0;
-        columnIndex < totalColumns;
-        columnIndex++
-    ) {
-
-        const column =
-            document.createElement("div");
-
-        column.className = "column";
-
-        for (
-            let rowIndex = 0;
-            rowIndex < cellsPerColumn;
-            rowIndex++
-        ) {
-
-            const cell =
-                document.createElement("div");
-
-            cell.className = "cell";
-
-            /*
-                Bottom cell = 1
-                Top cell = 10
-            */
-
-            const cellsFromBottom =
-                cellsPerColumn -
-                rowIndex;
-
-            let filled = false;
-
-            if (
-                columnIndex <
-                completeColumns
-            ) {
-
-                filled = true;
-
-            } else if (
-                columnIndex ===
-                completeColumns &&
-                cellsFromBottom <=
-                partialCells
-            ) {
-
-                filled = true;
-            }
-
-            if (filled) {
-                cell.classList.add("filled");
-            }
-
-            /*
-                Clicking anywhere in the column
-                changes its height to the clicked
-                position.
-            */
-
-            cell.addEventListener(
-                "click",
-                () => {
-
-                    const clickedHeight =
-                        cellsFromBottom;
-
-                    const newValue =
-                        (columnIndex *
-                         info.columnValue) +
-
-                        (clickedHeight *
-                         info.cellValue);
-
-                    values[index] =
-                        Math.round(
-                            newValue * 10000
-                        ) / 10000;
-
-                    values[index] =
-                        Math.max(
-                            0,
-                            Math.min(
-                                1,
-                                values[index]
-                            )
-                        );
-
-                    buildAllSquares();
-                    updateResult();
-                }
-            );
-
-            column.appendChild(cell);
-        }
-
-        grid.appendChild(column);
-    }
-
-
-    /*
-        Update the displayed number.
-    */
-
-    const display =
-        document.getElementById(
-            "value-" + index
-        );
-
-    if (display) {
-
-        display.textContent =
-            values[index].toFixed(
-                info.digits
-            );
-    }
-}
-
-
-/*
-    Update the operator symbols.
-*/
-
-function updateOperatorDisplay() {
-
-    const symbols = {
-        add: "+",
-        subtract: "−",
-        multiply: "×",
-        divide: "÷"
-    };
-
-    document.querySelectorAll(
-        "#squaresContainer .operator"
-    ).forEach(operator => {
-
-        operator.textContent =
-            symbols[operation];
-    });
-}
-
-
-/*
-    Calculate the final result.
-*/
-
-function calculateResult() {
-
-    if (values.length === 0) {
-        return 0;
-    }
-
-    let result =
-        values[0];
-
-    if (operation === "add") {
-
-        result = values.reduce(
-            (total, value) =>
-                total + value,
-            0
-        );
-
-    } else if (operation === "subtract") {
-
-        result = values.slice(1).reduce(
-            (total, value) =>
-                total - value,
-            values[0]
-        );
-
-    } else if (operation === "multiply") {
-
-        result = values.reduce(
-            (total, value) =>
-                total * value,
-            1
-        );
-
-    } else if (operation === "divide") {
-
-        for (
-            let i = 1;
-            i < values.length;
-            i++
-        ) {
-
-            if (values[i] === 0) {
-                return null;
-            }
-
-            result =
-                result / values[i];
-        }
-    }
-
-    return Math.round(
-        result * 10000
-    ) / 10000;
-}
-
-
-/*
-    Update result display and grid.
-*/
-
-function updateResult() {
-
-    const error =
-        document.getElementById("error");
-
-    error.textContent = "";
-
-    const result =
-        calculateResult();
-
-    const info =
-        placeInfo[decimalPlace];
-
-    if (result === null) {
-
-        document.getElementById(
-            "resultNumber"
-        ).textContent = "Undefined";
-
-        error.textContent =
-            "You cannot divide by zero.";
-
-        buildResultGrid(0);
-        return;
-    }
-
-    document.getElementById(
-        "resultNumber"
-    ).textContent =
-        result.toFixed(info.digits);
-
-    buildResultGrid(result);
-}
-
-
-/*
-    Build the result grid.
-*/
-
-function buildResultGrid(result) {
-
-    const grid =
-        document.getElementById(
-            "resultGrid"
-        );
-
-    const info =
-        placeInfo[decimalPlace];
-
-    grid.innerHTML = "";
-
-    /*
-        The visual grid can represent
-        values from 0 through 1.
-    */
-
-    const displayValue =
-        Math.max(
-            0,
-            Math.min(
-                1,
-                result
-            )
-        );
-
-    const totalCells =
-        Math.round(
-            displayValue /
-            info.cellValue
-        );
-
-    const totalColumns = 10;
-    const cellsPerColumn = 10;
-
-    for (
-        let columnIndex = 0;
-        columnIndex < totalColumns;
-        columnIndex++
-    ) {
-
-        const column =
-            document.createElement("div");
-
-        column.className = "column";
-
-        for (
-            let rowIndex = 0;
-            rowIndex < cellsPerColumn;
-            rowIndex++
-        ) {
-
-            const cell =
-                document.createElement("div");
-
-            cell.className = "cell";
-
-            const cellNumber =
-                columnIndex *
-                cellsPerColumn +
-                (cellsPerColumn -
-                 rowIndex);
-
-            if (
-                cellNumber <=
-                totalCells
-            ) {
-
-                cell.classList.add(
-                    "result"
-                );
-            }
-
-            column.appendChild(cell);
-        }
-
-        grid.appendChild(column);
-    }
-}
-
-
-/*
-    Update the square counter and
-    disable Remove at the minimum.
-*/
-
-function updateSquareCount() {
-
-    const count =
-        values.length;
-
-    document.getElementById(
-        "squareCount"
-    ).textContent =
-        count +
-        (count === 1
-            ? " square"
-            : " squares");
-
-    document.getElementById(
-        "removeSquareBtn"
-    ).disabled =
-        count <= MIN_SQUARES;
-
-    document.getElementById(
-        "addSquareBtn"
-    ).disabled =
-        count >= MAX_SQUARES;
-}
-
-
-/*
-    Clear all numbers but keep
-    the current number of squares.
-*/
-
-function clearSquares() {
+/* -------------------------------------------------
+   CLEAR
+------------------------------------------------- */
+
+function clearAll() {
 
     values =
         values.map(() => 0);
 
-    buildAllSquares();
-    updateResult();
+    updateAllSquares();
 }
 
 
-/*
-    Button listeners
-*/
+/* -------------------------------------------------
+   BUTTON STATE
+------------------------------------------------- */
 
-document.getElementById("addBtn")
-    .addEventListener(
-        "click",
-        () => setOperation("add")
-    );
+function updateButtons() {
 
-document.getElementById("subtractBtn")
-    .addEventListener(
-        "click",
-        () => setOperation("subtract")
-    );
+    removeButton.disabled =
+        values.length <= MIN_SQUARES;
 
-document.getElementById("multiplyBtn")
-    .addEventListener(
-        "click",
-        () => setOperation("multiply")
-    );
-
-document.getElementById("divideBtn")
-    .addEventListener(
-        "click",
-        () => setOperation("divide")
-    );
+    addButton.disabled =
+        values.length >= MAX_SQUARES;
+}
 
 
-document.getElementById("tenthsBtn")
-    .addEventListener(
-        "click",
-        () => setDecimalPlace("tenths")
-    );
+/* -------------------------------------------------
+   CONTROLS
+------------------------------------------------- */
 
-document.getElementById("hundredthsBtn")
-    .addEventListener(
-        "click",
-        () => setDecimalPlace("hundredths")
-    );
+addButton.addEventListener(
+    "click",
+    addSquare
+);
 
-document.getElementById("thousandthsBtn")
-    .addEventListener(
-        "click",
-        () => setDecimalPlace("thousandths")
-    );
+removeButton.addEventListener(
+    "click",
+    removeSquare
+);
+
+clearButton.addEventListener(
+    "click",
+    clearAll
+);
+
+placeSelect.addEventListener(
+    "change",
+    function() {
+
+        /*
+           Keep the existing decimal amount
+           when changing place values, but
+           rebuild the correct grid.
+        */
+
+        buildAllSquares();
+    }
+);
+
+operationSelect.addEventListener(
+    "change",
+    function() {
+
+        buildAllSquares();
+    }
+);
 
 
-document.getElementById("addSquareBtn")
-    .addEventListener(
-        "click",
-        addSquare
-    );
-
-document.getElementById("removeSquareBtn")
-    .addEventListener(
-        "click",
-        removeSquare
-    );
-
-document.getElementById("clearBtn")
-    .addEventListener(
-        "click",
-        clearSquares
-    );
-
-
-/*
-    Start with the original 2 squares.
-*/
+/* -------------------------------------------------
+   START
+------------------------------------------------- */
 
 buildAllSquares();
-updateResult();
-updateSquareCount();
 
 </script>
 
